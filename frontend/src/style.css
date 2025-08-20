@@ -3,58 +3,153 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+@layer base {
+  /* ✅ Modern CSS variables for consistent theming */
+  :root {
+    --primary-50: #eff6ff;
+    --primary-100: #dbeafe;
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --primary-700: #1d4ed8;
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-large: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
-  .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  /* ✅ Smooth scrolling for better UX */
+  html {
+    scroll-behavior: smooth;
   }
 
-  .btn-secondary {
-    @apply bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500;
-  }
-
-  .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
-  }
-
-  .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
-  }
-
-  .card {
-    @apply bg-white rounded-lg shadow-md p-6;
-  }
-
-  .priority-low {
-    @apply bg-green-100 text-green-800 border-green-300;
-  }
-
-  .priority-medium {
-    @apply bg-yellow-100 text-yellow-800 border-yellow-300;
-  }
-
-  .priority-high {
-    @apply bg-red-100 text-red-800 border-red-300;
+  /* ✅ Enhanced body typography */
+  body {
+    @apply antialiased font-sans;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 100vh;
   }
 }
 
-/* Custom scrollbar */
+@layer components {
+  /* ✅ Modern button components with enhanced hover effects */
+  .btn {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 transform hover:scale-105 active:scale-95 shadow-md;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 focus:ring-blue-300 shadow-blue-200;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-300 shadow-gray-200;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-700 hover:to-pink-700 focus:ring-red-300 shadow-red-200;
+  }
+
+  /* ✅ Modern input styling */
+  .input {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm;
+  }
+
+  /* ✅ Modern card component */
+  .card {
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-8 hover:shadow-xl transition-all duration-300;
+  }
+
+  /* ✅ Enhanced priority classes with modern colors */
+  .priority-low {
+    @apply bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-600/20;
+  }
+
+  .priority-medium {
+    @apply bg-amber-50 text-amber-700 border-amber-200 ring-1 ring-amber-600/20;
+  }
+
+  .priority-high {
+    @apply bg-red-50 text-red-700 border-red-200 ring-1 ring-red-600/20;
+  }
+}
+
+@layer utilities {
+  /* ✅ Custom animations for modern interactions */
+  .animate-bounce-in {
+    animation: bounceIn 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+}
+
+/* ✅ Modern keyframe animations */
+@keyframes bounceIn {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ✅ Modern scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-gray-50 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded;
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  @apply bg-gray-400;
+}
+
+/* ✅ Enhanced focus states for accessibility */
+.focus-visible {
+  @apply ring-4 ring-blue-300 ring-offset-2;
+}
+
+/* ✅ Smooth drag preview effect */
+.drag-preview {
+  @apply opacity-50 transform rotate-2 scale-95;
+}
+
+/* ✅ Modern glass-morphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
