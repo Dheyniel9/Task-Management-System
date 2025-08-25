@@ -174,18 +174,28 @@ public function createUser(Request $request)
  */
 public function updateUser(Request $request, User $user)
 {
-    $request->validate([
+    $validatedData = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-        'is_admin' => 'boolean'
+        'is_admin' => 'sometimes|boolean' // Changed from 'boolean' to 'sometimes|boolean'
     ]);
 
     try {
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'is_admin' => $request->is_admin ?? false,
-        ]);
+        // Explicitly handle is_admin field
+        $updateData = [
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+        ];
+
+        // Only update is_admin if it's present in the request
+        if ($request->has('is_admin')) {
+            $updateData['is_admin'] = $request->boolean('is_admin'); // Use boolean() method for proper conversion
+        }
+
+        $user->update($updateData);
+
+        // Refresh the model to get the updated data
+        $user->refresh();
 
         return response()->json([
             'success' => true,
