@@ -10,6 +10,7 @@ use App\Models\Task;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -131,4 +132,301 @@ class AdminController extends Controller
             'data' => $stats,
         ]);
     }
+
+
+/**
+ * Create a new user
+ */
+public function createUser(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8|confirmed',
+        'is_admin' => 'boolean'
+    ]);
+
+    try {
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'is_admin' => $request->is_admin ?? false,
+            'email_verified_at' => now(), // Auto-verify admin created users
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully',
+            'data' => $user
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating user',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update an existing user
+ */
+public function updateUser(Request $request, User $user)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        'is_admin' => 'boolean'
+    ]);
+
+    try {
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'is_admin' => $request->is_admin ?? false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User updated successfully',
+            'data' => $user
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating user',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Delete a user
+ */
+public function deleteUser(User $user)
+{
+    try {
+        // Prevent deleting the last admin user
+        if ($user->is_admin && User::where('is_admin', true)->count() <= 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete the last admin user'
+            ], 422);
+        }
+
+        // Prevent self-deletion
+        if ($user->id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot delete your own account'
+            ], 422);
+        }
+
+        // Delete user's tasks first (or handle cascade)
+        $user->tasks()->delete();
+        
+        // Delete the user
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User deleted successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting user',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get detailed user information
+ */
+public function getUserDetails(User $user)
+{
+    try {
+        $userWithStats = User::withCount([
+            'tasks as tasks_count',
+            'tasks as completed_tasks_count' => function ($query) {
+                $query->where('status', 'completed');
+            },
+            'tasks as pending_tasks_count' => function ($query) {
+                $query->where('status', 'pending');
+            },
+            'tasks as in_progress_tasks_count' => function ($query) {
+                $query->where('status', 'in_progress');
+            }
+        ])->find($user->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $userWithStats
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching user details',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update task status (for drag-and-drop)
+ */
+public function updateTaskStatus(Request $request, Task $task)
+{
+    $request->validate([
+        'status' => 'required|in:pending,in_progress,completed'
+    ]);
+
+    try {
+        $task->status = $request->status;
+        
+        // Set completion timestamp if marking as completed
+        if ($request->status === 'completed') {
+            $task->completed_at = now();
+        } else {
+            $task->completed_at = null;
+        }
+
+        $task->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Task status updated successfully',
+            'data' => $task
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating task status',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Bulk delete users
+ */
+public function bulkDeleteUsers(Request $request)
+{
+    $request->validate([
+        'user_ids' => 'required|array',
+        'user_ids.*' => 'exists:users,id'
+    ]);
+
+    try {
+        $currentUserId = auth()->id();
+        $userIds = collect($request->user_ids);
+
+        // Prevent self-deletion
+        if ($userIds->contains($currentUserId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot delete your own account'
+            ], 422);
+        }
+
+        // Check if trying to delete all admin users
+        $adminUsers = User::whereIn('id', $userIds)->where('is_admin', true)->count();
+        $totalAdmins = User::where('is_admin', true)->count();
+        
+        if ($adminUsers >= $totalAdmins) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete all admin users'
+            ], 422);
+        }
+
+        // Delete users and their tasks
+        $deletedCount = 0;
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+            if ($user) {
+                $user->tasks()->delete();
+                $user->delete();
+                $deletedCount++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully deleted {$deletedCount} users"
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting users',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Export users data
+ */
+public function exportUsers(Request $request)
+{
+    try {
+        $format = $request->get('format', 'csv');
+        $users = User::withCount([
+            'tasks as tasks_count',
+            'tasks as completed_tasks_count' => function ($query) {
+                $query->where('status', 'completed');
+            }
+        ])->get();
+
+        if ($format === 'csv') {
+            $filename = 'users_export_' . date('Y-m-d_H-i-s') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ];
+
+            $callback = function() use ($users) {
+                $file = fopen('php://output', 'w');
+                
+                // CSV headers
+                fputcsv($file, [
+                    'ID', 'Name', 'Email', 'Role', 'Total Tasks', 
+                    'Completed Tasks', 'Join Date', 'Last Updated'
+                ]);
+
+                // CSV data
+                foreach ($users as $user) {
+                    fputcsv($file, [
+                        $user->id,
+                        $user->name,
+                        $user->email,
+                        $user->is_admin ? 'Admin' : 'User',
+                        $user->tasks_count ?? 0,
+                        $user->completed_tasks_count ?? 0,
+                        $user->created_at->format('Y-m-d H:i:s'),
+                        $user->updated_at->format('Y-m-d H:i:s')
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
+        // JSON export fallback
+        return response()->json([
+            'success' => true,
+            'data' => $users
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error exporting users',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }

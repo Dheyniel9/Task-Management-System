@@ -1,10 +1,9 @@
-<!-- src/views/Tasks.vue -->
 <!--
   This is the main tasks page. It shows your tasks, lets you filter, add, edit, delete, and reorder them.
   It also displays task statistics and uses modals for creating/editing tasks.
 -->
 <template>
-  <div class="space-y-6">
+  <div v-if="!isAdmin" class="space-y-6">
     <!-- ✅ Enhanced Statistics Dashboard -->
     <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-8">
       <div class="flex justify-between items-center mb-8">
@@ -273,97 +272,81 @@
 </template>
 
 <script setup>
-// This script handles all the logic for displaying, editing, and managing tasks
 import { ref, onMounted, computed } from 'vue'
 import { useTaskStore } from '@/stores/tasks'
+import { useAuthStore } from '@/stores/auth'
 import TaskList from '@/components/tasks/TaskList.vue'
 import TaskFilters from '@/components/tasks/TaskFilters.vue'
 import TaskModal from '@/components/tasks/TaskModal.vue'
 
 const taskStore = useTaskStore()
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
 const showCreateModal = ref(false)
 const editingTask = ref(null)
 
 onMounted(async () => {
+  if (isAdmin.value) return
   try {
     console.log('🚀 Starting to fetch tasks...')
-
-    // ✅ FORCE clear all filters first
     taskStore.clearFilters()
     console.log('🧹 Filters cleared before fetch')
-
     await taskStore.fetchTasks()
     console.log('📋 Tasks fetched:', taskStore.tasks)
     console.log('🔍 Filtered tasks after fetch:', taskStore.filteredTasks)
-
     await taskStore.fetchStatistics()
     console.log('📊 Statistics fetched:', taskStore.statistics)
-
   } catch (error) {
     console.error('❌ Error loading tasks:', error)
   }
 })
 
-// ✅ Enhanced statistics calculations
+// ...existing code for statistics and methods...
 const getCompletionRate = () => {
   const total = taskStore.statistics?.total || 0
   const completed = taskStore.statistics?.completed || 0
   return total > 0 ? Math.round((completed / total) * 100) : 0
 }
-
 const getPendingPercentage = () => {
   const total = taskStore.statistics?.total || 0
   const pending = taskStore.statistics?.pending || 0
   return total > 0 ? Math.round((pending / total) * 100) : 0
 }
-
 const getHighPriorityPercentage = () => {
   const total = taskStore.statistics?.total || 0
   const high = taskStore.statistics?.by_priority?.high || 0
   return total > 0 ? Math.round((high / total) * 100) : 0
 }
-
 const getMediumPriorityPercentage = () => {
   const total = taskStore.statistics?.total || 0
   const medium = taskStore.statistics?.by_priority?.medium || 0
   return total > 0 ? Math.round((medium / total) * 100) : 0
 }
-
 const getLowPriorityPercentage = () => {
   const total = taskStore.statistics?.total || 0
   const low = taskStore.statistics?.by_priority?.low || 0
   return total > 0 ? Math.round((low / total) * 100) : 0
 }
-
 const getTasksChange = () => {
-  // This would typically come from comparing with previous data
   return "No change from yesterday"
 }
-
 const getTasksCompletedToday = () => {
-  // This would typically filter tasks completed today
   return taskStore.statistics?.completed || 0
 }
-
 const getAverageCompletionRate = () => {
-  // This would typically be calculated from historical data
   return getCompletionRate()
 }
-
 const getMostCommonPriority = () => {
   const priorities = taskStore.statistics?.by_priority || {}
   const highest = Math.max(priorities.low || 0, priorities.medium || 0, priorities.high || 0)
-
   if (priorities.high === highest) return 'High'
   if (priorities.medium === highest) return 'Medium'
   if (priorities.low === highest) return 'Low'
   return 'None'
 }
-
 function editTask(task) {
   editingTask.value = task
 }
-
 async function deleteTask(taskId) {
   if (confirm('Are you sure you want to delete this task?')) {
     try {
@@ -374,19 +357,16 @@ async function deleteTask(taskId) {
     }
   }
 }
-
 async function toggleTaskStatus(task) {
   const newStatus = task.status === 'pending' ? 'completed' : 'pending'
   try {
     await taskStore.updateTask(task.id, { status: newStatus })
     console.log('✅ Task status updated:', task.id, newStatus)
-    // ✅ Refresh statistics after status change
     await taskStore.fetchStatistics()
   } catch (error) {
     console.error('❌ Error updating task status:', error)
   }
 }
-
 async function saveTask(taskData) {
   try {
     if (editingTask.value) {
@@ -397,18 +377,15 @@ async function saveTask(taskData) {
       console.log('🆕 Task created:', taskData)
     }
     closeModal()
-    // ✅ Refresh statistics after creating/updating
     await taskStore.fetchStatistics()
   } catch (error) {
     console.error('❌ Error saving task:', error)
   }
 }
-
 function closeModal() {
   showCreateModal.value = false
   editingTask.value = null
 }
-
 async function handleReorder(taskOrders) {
   try {
     await taskStore.reorderTasks(taskOrders)
@@ -417,15 +394,14 @@ async function handleReorder(taskOrders) {
     console.error('❌ Error reordering tasks:', error)
   }
 }
-
 function clearAllFilters() {
   taskStore.clearFilters()
   console.log('🧹 All filters cleared manually')
   console.log('📋 Tasks after clear:', taskStore.filteredTasks)
 }
-
 function forceRefresh() {
   taskStore.fetchTasks()
   console.log('🔄 Force refresh triggered')
 }
+// ...existing code...
 </script>

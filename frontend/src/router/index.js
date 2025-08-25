@@ -1,4 +1,3 @@
-// src/router/index.js - Fixed with root redirect and better navigation
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
@@ -11,10 +10,14 @@ import Login from "@/views/auth/Login.vue";
 import Register from "@/views/auth/Register.vue";
 import Tasks from "@/views/Tasks.vue";
 
+// Admin Views
+import AdminDashboard from "@/views/admin/AdminDashboard.vue";
+import SiteAdministration from "@/views/admin/SiteAdministration.vue";
+
 const routes = [
   {
     path: "/",
-    redirect: "/tasks", // ✅ Added root redirect to tasks page
+    redirect: "/tasks",
   },
   {
     path: "/login",
@@ -53,7 +56,34 @@ const routes = [
     ],
   },
   {
-    path: "/:pathMatch(.*)*", // ✅ Added 404 catch-all route
+    path: "/admin",
+    component: DefaultLayout,
+    children: [
+      {
+        path: "",
+        name: "AdminDashboard",
+        component: AdminDashboard,
+        meta: {
+          requiresAuth: true,
+          requiresAdmin: true,
+          title: "Admin Dashboard"
+        },
+      },
+      // Add the Site Administration route
+      {
+        path: "site",
+        name: "SiteAdministration",
+        component: SiteAdministration,
+        meta: {
+          requiresAuth: true,
+          requiresAdmin: true,
+          title: "Site Administration"
+        },
+      },
+    ],
+  },
+  {
+    path: "/:pathMatch(.*)*",
     redirect: "/tasks",
   },
 ];
@@ -63,32 +93,32 @@ const router = createRouter({
   routes,
 });
 
-// Navigation guards: control access to routes based on user status
+// Navigation guards
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  // ✅ Added debugging logs
-  console.log(
-    "Navigation to:",
-    to.path,
-    "Auth status:",
-    authStore.isAuthenticated
-  );
+  // Wait for user info to be loaded if not present but token exists
+  if (!authStore.user && authStore.token) {
+    await authStore.fetchUser();
+  }
 
-  // If route needs login and user isn't logged in, go to login
+  // If admin is authenticated and tries to access /tasks or /, redirect to /admin
+  if (
+    authStore.isAuthenticated &&
+    authStore.isAdmin &&
+    (to.path === '/tasks' || to.path === '/')
+  ) {
+    return next('/admin');
+  }
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log("Redirecting to login - not authenticated");
-    return next("/login");
+    return next('/login');
   }
-  // If route needs admin and user isn't admin, go to tasks
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    console.log("Redirecting to tasks - not admin");
-    return next("/tasks");
+    return next('/tasks');
   }
-  // If route is for guests and user is logged in, go to tasks
   if (to.meta.guest && authStore.isAuthenticated) {
-    console.log("Redirecting to tasks - already authenticated");
-    return next("/tasks");
+    return next('/tasks');
   }
   next();
 });

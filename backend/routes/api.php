@@ -64,10 +64,24 @@ Route::middleware('auth:sanctum')->group(function () {
     | These can only be used by users with "admin" access.
     | Example: View all users, all tasks, or overall statistics.
     */
-    Route::middleware('admin')->prefix('admin')->group(function () {
-        Route::get('/users', [AdminController::class, 'users']);                     // See all users
-        Route::get('/users/{user}/statistics', [AdminController::class, 'userStatistics']); // Stats per user
-        Route::get('/tasks', [AdminController::class, 'allTasks']);                 // See all tasks
-        Route::get('/statistics', [AdminController::class, 'systemStatistics']);    // System-wide stats
+       Route::prefix('admin')->group(function () {
+        // Dashboard routes
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::get('/users/{user}/statistics', [AdminController::class, 'userStatistics']);
+        Route::get('/tasks', [AdminController::class, 'allTasks']);
+        Route::get('/statistics', [AdminController::class, 'systemStatistics']);
+        
+        // User management routes
+        Route::post('/users', [AdminController::class, 'createUser']);
+        Route::get('/users/{user}', [AdminController::class, 'getUserDetails']);
+        Route::put('/users/{user}', [AdminController::class, 'updateUser']);
+        Route::delete('/users/{user}', [AdminController::class, 'deleteUser']);
+        Route::post('/users/bulk-delete', [AdminController::class, 'bulkDeleteUsers']);
+        Route::get('/users/export', [AdminController::class, 'exportUsers']);
+        
+        // Task management routes
+        Route::patch('/tasks/{task}/status', [AdminController::class, 'updateTaskStatus']);
+        Route::get('/tasks/{task}', [AdminController::class, 'getTaskDetails']);
+        Route::delete('/tasks/{task}', [AdminController::class, 'deleteTask']);
     });
 });

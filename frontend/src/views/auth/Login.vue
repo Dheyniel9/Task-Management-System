@@ -61,7 +61,7 @@
         </button>
       </form>
       <!-- Demo credentials -->
-      <div class="mt-6 pt-6 border-t">
+      <!-- <div class="mt-6 pt-6 border-t">
         <p class="text-sm text-gray-600 mb-3">Demo Credentials:</p>
         <div class="space-y-2 text-sm">
           <button
@@ -77,7 +77,7 @@
             <span class="font-medium">Admin User:</span> admin@example.com / password
           </button>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
