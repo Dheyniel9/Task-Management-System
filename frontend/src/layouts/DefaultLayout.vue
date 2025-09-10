@@ -53,9 +53,9 @@
           <div class="flex items-center space-x-4">
             <div class="text-sm text-gray-600">
               {{ authStore.user?.name }}
-              <span v-if="authStore.isAdmin" class="ml-2 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full font-medium">
+              <!-- <span v-if="authStore.isAdmin" class="ml-2 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full font-medium">
                 Admin
-              </span>
+              </span> -->
             </div>
             <button
               @click="handleLogout"

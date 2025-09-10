@@ -19,7 +19,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'is_admin', 
+        'is_admin',
         'email_verified_at',
     ];
 
@@ -40,15 +40,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_admin' => 'boolean', 
+            'is_admin' => 'boolean',
         ];
     }
 
     /**
-     * Make sure is_admin is not in the guarded array
-     * If you have a $guarded property, make sure 'is_admin' is NOT in it
+     * Check if the user has admin privileges
+     * This method was missing and causing the BadMethodCallException
      */
-    // protected $guarded = ['id']; // is_admin should NOT be here
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
+    }
 
     /**
      * Relationship with tasks
